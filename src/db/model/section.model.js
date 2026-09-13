@@ -43,6 +43,7 @@ SectionModel.init(
   },
   {
     freezeTableName: true,
+    tableName: "sections",
     timestamps: true,
     paranoid: true,
     sequelize,
