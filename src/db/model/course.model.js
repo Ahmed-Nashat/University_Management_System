@@ -1,11 +1,11 @@
 import { DataTypes, Model } from "sequelize";
 import { sequelize } from "../connection.js";
 
-export class CurseModel extends Model {
+export class CourseModel extends Model {
   id;
 }
 
-CurseModel.init(
+CourseModel.init(
   {
     code: {
       type: DataTypes.STRING,
@@ -30,5 +30,6 @@ CurseModel.init(
     timestamps: true,
     paranoid: true,
     freezeTableName: true,
+    tableName: "courses",
   },
 );
