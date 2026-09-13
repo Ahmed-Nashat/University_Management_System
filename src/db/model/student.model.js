@@ -1,12 +1,29 @@
 import { DataTypes, Model } from "sequelize";
 import { sequelize } from "../connection.js";
+import { ProfessorModel } from "./professor.model.js";
 
 export class StudentModel extends Model {
+  toJSON() {
+    const student = { ...this.get() };
+    delete student.firstName;
+    delete student.lastName;
+
+    return student;
+  }
   id;
 }
 
 StudentModel.init(
   {
+    studentNumber: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true,
+      field: "student_number",
+      set(value) {
+        this.setDataValue("studentNumber", value.trim());
+      },
+    },
     firstName: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -15,6 +32,9 @@ StudentModel.init(
           msg: "Only alphapets are allowed",
         },
         len: [3, 30],
+      },
+      set(value) {
+        this.setDataValue("firstName", value.trim());
       },
     },
     lastName: {
@@ -26,12 +46,17 @@ StudentModel.init(
         },
         len: [3, 30],
       },
+      set(value) {
+        this.setDataValue("lastName", value.trim());
+      },
     },
     userName: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      set(value) {
-        this.setDataValue("userName", value.trim());
+      type: DataTypes.VIRTUAL,
+      get() {
+        const firstName = this.getDataValue("firstName");
+        const lastName = this.getDataValue("lastName");
+
+        return `${firstName} ${lastName}`.trim();
       },
     },
     email: {
@@ -43,12 +68,19 @@ StudentModel.init(
           msg: "This email is invalid",
         },
       },
+      set(value) {
+        this.setDataValue("email", value.toLowerCase().trim());
+      },
     },
     phoneNumber: {
       type: DataTypes.STRING,
       allowNull: false,
+      unique: true,
       validate: {
         is: /^01[0-9]{9}$/,
+      },
+      set(value) {
+        this.setDataValue("phoneNumber", value.trim());
       },
     },
     DOB: {
@@ -74,6 +106,9 @@ StudentModel.init(
       validate: {
         len: [50, 150],
       },
+      set(value) {
+        this.setDataValue("address", value.trim());
+      },
     },
     level: {
       type: DataTypes.INTEGER.UNSIGNED,
@@ -93,18 +128,43 @@ StudentModel.init(
         isLowercase: true,
         isIn: [["undergraduate", "graduate", "post-graduate"]],
       },
+      set(value) {
+        this.setDataValue("status", value.trim());
+      },
     },
     admissionDate: {
       type: DataTypes.DATE,
       allowNull: false,
+      field: "admission_date",
+    },
+    departmentId: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: false,
+      field: "department_id",
+    },
+    academicAdvisorId: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: true,
+      field: "academic_advisor_id",
     },
   },
   {
     sequelize,
+    tableName: "students",
     timestamps: true,
     freezeTableName: true,
     paranoid: true,
   },
 );
 
-// await studentModel.sync({ alter: true });
+StudentModel.belongsTo(ProfessorModel, {
+  as: "academicAdvisor",
+  foreignKey: "academicAdvisorId",
+});
+
+ProfessorModel.hasMany(StudentModel, {
+  as: "advisedStudents",
+  foreignKey: "academicAdvisorId",
+});
+
+// await StudentModel.sync({ alter: true });

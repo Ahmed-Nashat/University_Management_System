@@ -1,6 +1,8 @@
 import express from "express";
 import config from "./config/config.service.js";
 import { checkdb } from "./db/connection.js";
+import "./db/model/student.model.js";
+import "./db/model/professor.model.js";
 
 const app = express();
 const port = config.port;
