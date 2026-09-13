@@ -1,12 +1,16 @@
 import { DataTypes, Model } from "sequelize";
 import { sequelize } from "../connection.js";
 
-export class DepartmentModel extends Model {
-  id;
-}
+export class DepartmentModel extends Model {}
 
 DepartmentModel.init(
   {
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+      allowNull: false,
+    },
     name: {
       type: DataTypes.STRING,
       allowNull: false,

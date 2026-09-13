@@ -1,12 +1,15 @@
 import { DataTypes, Model } from "sequelize";
 import { sequelize } from "../connection.js";
-
-export class ProfessorModel extends Model {
-  id;
-}
+export class ProfessorModel extends Model {}
 
 ProfessorModel.init(
   {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+      allowNull: false,
+    },
     name: {
       type: DataTypes.STRING,
       allowNull: false,

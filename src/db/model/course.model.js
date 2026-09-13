@@ -1,17 +1,20 @@
 import { DataTypes, Model } from "sequelize";
 import { sequelize } from "../connection.js";
 
-export class CourseModel extends Model {
-  id;
-}
+export class CourseModel extends Model {}
 
 CourseModel.init(
   {
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+      allowNull: false,
+    },
     code: {
       type: DataTypes.STRING,
       allowNull: false,
       unique: true,
-      primaryKey: true,
     },
     name: {
       type: DataTypes.STRING,

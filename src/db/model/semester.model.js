@@ -1,12 +1,16 @@
 import { DataTypes, Model } from "sequelize";
 import { sequelize } from "../connection.js";
 
-export class SemesterModel extends Model {
-  id;
-}
+export class SemesterModel extends Model {}
 
 SemesterModel.init(
   {
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+      allowNull: false,
+    },
     academicYear: {
       type: DataTypes.DATE,
       allowNull: false,

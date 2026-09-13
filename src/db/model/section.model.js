@@ -1,12 +1,16 @@
 import { DataTypes, Model } from "sequelize";
 import { sequelize } from "../connection.js";
 
-export class SectionModel extends Model {
-  id;
-}
+export class SectionModel extends Model {}
 
 SectionModel.init(
   {
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+      allowNull: false,
+    },
     room: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -36,12 +40,12 @@ SectionModel.init(
       field: "semester_id",
     },
     courseId: {
-      type: DataTypes.STRING,
+      type: DataTypes.INTEGER,
       allowNull: false,
       field: "course_id",
     },
     professorId: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.UUID,
       allowNull: false,
       field: "professor_id",
     },

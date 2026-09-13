@@ -1,6 +1,5 @@
-import { DataTypes, Model } from "sequelize";
+import { DataTypes, Model, Op } from "sequelize";
 import { sequelize } from "../connection.js";
-import { ProfessorModel } from "./professor.model.js";
 
 export class StudentModel extends Model {
   toJSON() {
@@ -9,11 +8,16 @@ export class StudentModel extends Model {
     delete student.lastName;
     return student;
   }
-  id;
 }
 
 StudentModel.init(
   {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+      allowNull: false,
+    },
     studentNumber: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -103,7 +107,7 @@ StudentModel.init(
       type: DataTypes.STRING,
       allowNull: false,
       validate: {
-        len: [50, 150],
+        len: [10, 250],
       },
       set(value) {
         this.setDataValue("address", value.trim());
@@ -142,7 +146,7 @@ StudentModel.init(
       field: "department_id",
     },
     academicAdvisorId: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.UUID,
       allowNull: true,
       field: "academic_advisor_id",
     },
@@ -152,6 +156,24 @@ StudentModel.init(
     timestamps: true,
     freezeTableName: true,
     paranoid: true,
-    tableName: "students"
+    tableName: "students",
   },
 );
+
+StudentModel.beforeValidate(async (student) => {
+  const year = new Date().getFullYear();
+  const latestStudent = await StudentModel.findOne({
+    where: {
+      studentNumber: {
+        [Op.like]: `STD-${year}-%`,
+      },
+    },
+    order: [["studentNumber", "DESC"]],
+    paranoid: false,
+  });
+  const lastSequence = latestStudent
+    ? Number(latestStudent.studentNumber.split("-")[2])
+    : 0;
+
+  student.studentNumber = `STD-${year}-${String(lastSequence + 1).padStart(4, "0")}`;
+});
