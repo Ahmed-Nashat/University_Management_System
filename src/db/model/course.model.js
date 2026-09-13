@@ -24,6 +24,11 @@ CourseModel.init(
     description: {
       type: DataTypes.STRING,
     },
+    departmentId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      field: "department_id",
+    },
   },
   {
     sequelize,

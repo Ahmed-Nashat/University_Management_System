@@ -137,12 +137,12 @@ StudentModel.init(
       field: "admission_date",
     },
     departmentId: {
-      type: DataTypes.INTEGER.UNSIGNED,
+      type: DataTypes.INTEGER,
       allowNull: false,
       field: "department_id",
     },
     academicAdvisorId: {
-      type: DataTypes.INTEGER.UNSIGNED,
+      type: DataTypes.INTEGER,
       allowNull: true,
       field: "academic_advisor_id",
     },
@@ -155,15 +155,3 @@ StudentModel.init(
     tableName: "students"
   },
 );
-
-// StudentModel.belongsTo(ProfessorModel, {
-//   as: "academicAdvisor",
-//   foreignKey: "academicAdvisorId",
-// });
-
-// ProfessorModel.hasMany(StudentModel, {
-//   as: "advisedStudents",
-//   foreignKey: "academicAdvisorId",
-// });
-
-// await StudentModel.sync({ alter: true });

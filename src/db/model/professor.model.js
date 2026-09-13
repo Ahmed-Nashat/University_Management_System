@@ -40,7 +40,7 @@ ProfessorModel.init(
       },
     },
     departmentId: {
-      type: DataTypes.INTEGER.UNSIGNED,
+      type: DataTypes.INTEGER,
       allowNull: false,
       field: "department_id",
     },
