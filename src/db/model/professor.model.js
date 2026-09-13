@@ -7,6 +7,14 @@ export class ProfessorModel extends Model {
 
 ProfessorModel.init(
   {
+    name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      validate: {
+        isAlpha: true,
+        len: [3, 30],
+      },
+    },
     email: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -39,7 +47,7 @@ ProfessorModel.init(
   },
   {
     sequelize,
-    tableName: "professor",
+    tableName: "professors",
     freezeTableName: true,
     timestamps: true,
     paranoid: true,
