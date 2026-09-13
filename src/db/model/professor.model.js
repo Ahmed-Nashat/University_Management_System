@@ -1,6 +1,13 @@
 import { DataTypes, Model } from "sequelize";
 import { sequelize } from "../connection.js";
-export class ProfessorModel extends Model {}
+
+export class ProfessorModel extends Model {
+  toJSON() {
+    const professor = { ...this.get() };
+    delete professor.password;
+    return professor;
+  }
+}
 
 ProfessorModel.init(
   {
@@ -29,6 +36,13 @@ ProfessorModel.init(
       },
       set(value) {
         this.setDataValue("email", value.toLowerCase().trim());
+      },
+    },
+    password: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      validate: {
+        len: [8, 255],
       },
     },
     phoneNumber: {
