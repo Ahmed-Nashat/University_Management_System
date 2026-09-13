@@ -7,7 +7,6 @@ export class StudentModel extends Model {
     const student = { ...this.get() };
     delete student.firstName;
     delete student.lastName;
-
     return student;
   }
   id;
@@ -150,21 +149,21 @@ StudentModel.init(
   },
   {
     sequelize,
-    tableName: "students",
     timestamps: true,
     freezeTableName: true,
     paranoid: true,
+    tableName: "students"
   },
 );
 
-StudentModel.belongsTo(ProfessorModel, {
-  as: "academicAdvisor",
-  foreignKey: "academicAdvisorId",
-});
+// StudentModel.belongsTo(ProfessorModel, {
+//   as: "academicAdvisor",
+//   foreignKey: "academicAdvisorId",
+// });
 
-ProfessorModel.hasMany(StudentModel, {
-  as: "advisedStudents",
-  foreignKey: "academicAdvisorId",
-});
+// ProfessorModel.hasMany(StudentModel, {
+//   as: "advisedStudents",
+//   foreignKey: "academicAdvisorId",
+// });
 
 // await StudentModel.sync({ alter: true });
