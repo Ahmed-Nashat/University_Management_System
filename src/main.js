@@ -14,6 +14,7 @@ setupAssociations();
 await checkdb();
 
 app.use("/students", routers.studentRouter);
+app.use("/professors", routers.professorRouter);
 
 app.use(errorHandler);
 app.listen(port, () => {
