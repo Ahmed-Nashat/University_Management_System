@@ -7,6 +7,11 @@ export class EnrollmentModel extends Model {
 
 EnrollmentModel.init(
   {
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+    },
     status: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -34,6 +39,16 @@ EnrollmentModel.init(
       validate: {
         isDate: true,
       },
+    },
+    studentId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      field: "student_id",
+    },
+    sectionId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      field: "section_id",
     },
   },
   {

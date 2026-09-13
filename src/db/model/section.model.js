@@ -31,7 +31,7 @@ SectionModel.init(
       field: "section_code",
     },
     semesterId: {
-      type: DataTypes.INTEGER.UNSIGNED,
+      type: DataTypes.INTEGER,
       allowNull: false,
       field: "semester_id",
     },
@@ -39,6 +39,11 @@ SectionModel.init(
       type: DataTypes.STRING,
       allowNull: false,
       field: "course_id",
+    },
+    professorId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      field: "professor_id",
     },
   },
   {
