@@ -1,4 +1,4 @@
-import { Op, where } from "sequelize";
+import { Op } from "sequelize";
 import { hashing, comparing } from "../../common/index.js";
 import { ProfessorModel } from "../../db/model/professor.model.js";
 import { SectionModel } from "../../db/model/section.model.js";
@@ -34,7 +34,7 @@ export const getAllProfessors = async (data = {}) => {
       {
         model: SectionModel,
         as: "sections",
-        attributes: ["section_code"],
+        attributes: ["sectionCode"],
       },
     ],
     attributes: {
@@ -53,9 +53,11 @@ export const getAllProfessors = async (data = {}) => {
 };
 
 export const updateProfessor = async (professorEmail, professorData) => {
-  const { password } = professorData;
-  const hashedPassword = await hashing(password);
-  console.log(hashedPassword);
+  const { password, id, email, ...updates } = professorData;
+
+  if (!password) {
+    throw new Error("Current password is required", { cause: 400 });
+  }
 
   const professor = await ProfessorModel.findOne({
     where: { email: professorEmail },
@@ -67,39 +69,35 @@ export const updateProfessor = async (professorEmail, professorData) => {
     cipherText: professor.password,
   });
   if (!isPasswordCorrect) {
-    throw new Error("Professor not found", { cause: 404 });
+    throw new Error("Invalid password", { cause: 401 });
   }
 
-  delete professorData.id;
-  delete professorData.email;
-  delete professorData.password;
-
-  await professor.update(professorData);
+  await professor.update(updates);
   await professor.reload({
     include: [
       {
         model: SectionModel,
         as: "sections",
-        attributes: ["section_code"],
+        attributes: ["sectionCode"],
       },
     ],
   });
   return professor;
 };
 
-export const assignSection = async (sectionCode, professor_id) => {
+export const assignSection = async (sectionCode, professorId) => {
   const sectionExists = await SectionModel.findOne({
     where: {
       sectionCode,
     },
   });
-  if (!sectionExists) throw new Error("Sectioin is not found", { cause: 404 });
+  if (!sectionExists) throw new Error("Section not found", { cause: 404 });
 
-  const professorExists = await ProfessorModel.findByPk(professor_id);
+  const professorExists = await ProfessorModel.findByPk(professorId);
   if (!professorExists)
-    throw new Error("Professor is not found", { cause: 404 });
+    throw new Error("Professor not found", { cause: 404 });
 
-  await sectionExists.update({ professor_id });
+  await sectionExists.update({ professorId });
   await sectionExists.reload({
     include: [
       {
@@ -110,11 +108,23 @@ export const assignSection = async (sectionCode, professor_id) => {
     ],
   });
 
-  const { professorId, ...sectionData } = sectionExists.toJSON();
-  return { ...sectionData };
+  const {
+    professorId: ignoredProfessorId,
+    professor,
+    ...sectionData
+  } = sectionExists.toJSON();
+
+  return {
+    ...sectionData,
+    professorName: professor?.name ?? null,
+  };
 };
 
 export const updatePassword = async (email, oldPassword, newPassword) => {
+  if (!oldPassword || !newPassword) {
+    throw new Error("Old and new passwords are required", { cause: 400 });
+  }
+
   const professor = await ProfessorModel.findOne({ where: { email } });
   if (!professor) throw new Error("Professor not found", { cause: 404 });
 
@@ -123,14 +133,13 @@ export const updatePassword = async (email, oldPassword, newPassword) => {
     cipherText: professor.password,
   });
   if (!isCorrectPassword)
-    throw new Error("Professor not found", { cause: 404 });
+    throw new Error("Invalid old password", { cause: 401 });
 
-  const updatedProfessor = await professor.update({
-    where: {
-      password: await hashing(newPassword),
-    },
+  await professor.update({
+    password: await hashing(newPassword),
   });
-  return updatedProfessor;
+
+  return professor;
 };
 
 export const deleteProfessor = async (search) => {

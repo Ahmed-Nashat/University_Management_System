@@ -1,6 +1,5 @@
 import { DataTypes, Model } from "sequelize";
 import { sequelize } from "../connection.js";
-import { SectionModel } from "./section.model.js";
 
 export class ProfessorModel extends Model {
   toJSON() {
@@ -43,7 +42,7 @@ ProfessorModel.init(
       type: DataTypes.STRING,
       allowNull: false,
       validate: {
-        min: 8,
+        len: [8, 255],
       },
     },
     phoneNumber: {

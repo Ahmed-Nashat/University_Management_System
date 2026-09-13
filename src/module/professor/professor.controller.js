@@ -29,7 +29,6 @@ professorRouter.get("/", async (req, res) => {
 professorRouter.patch("/update", async (req, res) => {
   const { email } = req.query,
     professorData = req.body;
-  console.log(email, professorData);
 
   const professors = await professorService.updateProfessor(
     email,
@@ -46,7 +45,6 @@ professorRouter.patch("/update", async (req, res) => {
 
 professorRouter.post("/assignSection", async (req, res) => {
   const { sectionCode, professorId } = req.body;
-  console.log(sectionCode);
 
   const professor = await professorService.assignSection(
     sectionCode,
