@@ -1,9 +1,7 @@
 import { DataTypes, Model } from "sequelize";
 import { sequelize } from "../connection.js";
 
-export class EnrollmentModel extends Model {
-  id;
-}
+export class EnrollmentModel extends Model {}
 
 EnrollmentModel.init(
   {
@@ -41,7 +39,7 @@ EnrollmentModel.init(
       },
     },
     studentId: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.UUID,
       allowNull: false,
       field: "student_id",
     },
