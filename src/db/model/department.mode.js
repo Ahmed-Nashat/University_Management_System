@@ -41,6 +41,7 @@ DepartmentModel.init(
   },
   {
     freezeTableName: true,
+    tableName: "departments",
     timestamps: true,
     paranoid: true,
     sequelize,
