@@ -40,7 +40,7 @@ departmentRouter.delete("/delete", async (req, res) => {
   return response({
     res,
     msg: department.isSoftDeleted()
-      ? "Department sodt deleted"
+      ? "Department soft deleted"
       : "Department hard deleted",
     data: department,
     status: 200,
@@ -48,7 +48,7 @@ departmentRouter.delete("/delete", async (req, res) => {
 });
 
 departmentRouter.get("/", async (req, res) => {
-  const department = await departmentService.getAllDepartments();
+  const department = await departmentService.getAllDepartments(req.query);
 
   return response({
     res,
