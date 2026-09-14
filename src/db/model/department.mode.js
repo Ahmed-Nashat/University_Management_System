@@ -14,9 +14,6 @@ DepartmentModel.init(
     name: {
       type: DataTypes.STRING,
       allowNull: false,
-      validate: {
-        isAlpha: true,
-      },
       set(value) {
         this.setDataValue("name", value.trim());
       },
@@ -35,9 +32,6 @@ DepartmentModel.init(
     office: {
       type: DataTypes.STRING,
       allowNull: false,
-      validate: {
-        isAlpha: true,
-      },
       set(value) {
         this.setDataValue("office", value.trim());
       },
