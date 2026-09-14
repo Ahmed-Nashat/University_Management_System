@@ -15,6 +15,7 @@ await checkdb();
 
 app.use("/students", routers.studentRouter);
 app.use("/professors", routers.professorRouter);
+app.use("/sections", routers.sectionRouter);
 
 app.use(errorHandler);
 app.listen(port, () => {
