@@ -129,13 +129,12 @@ export const getAllStudents = async (data = {}) => {
       },
     ],
   });
-  return {
-    rows,
-
-    meta: {
-      totalCount: count,
-      totalPage: Math.ceil(count / limit),
-      currentPage: page,
-    },
-  };
+    return {
+      rows,
+      meta: {
+        totalCount: count,
+        totalPage: Math.ceil(count / limit),
+        currentPage: page,
+      },
+    };
 };
