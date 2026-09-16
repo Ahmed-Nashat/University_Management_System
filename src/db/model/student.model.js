@@ -161,6 +161,8 @@ StudentModel.init(
 );
 
 StudentModel.beforeValidate(async (student) => {
+  // Editing a student must preserve the number they use to sign in.
+  if (!student.isNewRecord) return;
   const year = new Date().getFullYear();
   const latestStudent = await StudentModel.findOne({
     where: {
