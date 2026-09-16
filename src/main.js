@@ -19,6 +19,7 @@ app.use("/sections", routers.sectionRouter);
 app.use("/departments", routers.departmentRouter);
 app.use("/courses", routers.courseRouter);
 app.use("/semesters", routers.semesterRouter);
+app.use("/enrollments", routers.enrollmentRouter);
 
 app.use(errorHandler);
 app.listen(port, () => {
