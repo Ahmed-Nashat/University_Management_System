@@ -29,6 +29,7 @@ import { createDemoData, changeDemo } from "./demo.js";
 import { listRecords, mutate, request } from "./api.js";
 import { Modal, RecordForm, DeleteDialog } from "./components.jsx";
 import Login from "./Login.jsx";
+import DepartmentFilter from "./DepartmentFilter.jsx";
 
 const moduleIcons = {
   students: Users,
@@ -584,20 +585,11 @@ export default function App() {
                           onChange={(e) => setSearch(e.target.value)}
                         />
                       </label>
-                      <label>
-                        <span className="sr-only">Department</span>
-                        <select
-                          value={filter}
-                          onChange={(e) => setFilter(e.target.value)}
-                        >
-                          <option value="">All departments</option>
-                          {data.departments.map((item) => (
-                            <option value={item.id} key={item.id}>
-                              {item.name}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
+                      <DepartmentFilter
+                        departments={data.departments}
+                        value={filter}
+                        onChange={setFilter}
+                      />
                       <span className="quiet">
                         {visibleSections.length} sections
                       </span>
@@ -864,21 +856,14 @@ export default function App() {
                       {professorPage.fields.some(
                         (f) => f.key === "departmentId",
                       ) && (
-                        <select
-                          aria-label="Filter department"
+                        <DepartmentFilter
+                          departments={data.departments}
                           value={filter}
-                          onChange={(e) => {
-                            setFilter(e.target.value);
+                          onChange={(next) => {
+                            setFilter(next);
                             setPagination(1);
                           }}
-                        >
-                          <option value="">All departments</option>
-                          {data.departments.map((item) => (
-                            <option value={item.id} key={item.id}>
-                              {item.name}
-                            </option>
-                          ))}
-                        </select>
+                        />
                       )}
                       <span className="quiet">{rows.length} records</span>
                       {mode === "live" && (
