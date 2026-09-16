@@ -3,6 +3,105 @@
 A REST API for managing university departments, students, professors, courses,
 semesters, course sections, and student enrollments.
 
+## Web Interface
+
+The React interface lives in `frontend/`. It follows the schedule-first UI plan:
+an off-white canvas, navy/blue course content, restrained orange actions, and
+translucent floating navigation. The student and professor workspaces are separate.
+
+- **Students:** sign in with `studentNumber` only; see their classes, enroll in a
+  section, and read their own grades. No management or grade-editing controls.
+- **Professors:** sign in with their existing email and password; manage students,
+  professors, departments, courses, sections, semesters, and enrollment results.
+- **Preview:** the sign-in page offers interactive sample workspaces. Preview
+  changes stay in memory and reset on refresh; they never change database records.
+
+Start the API with the existing instructions below, then in a second terminal:
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+Open `http://127.0.0.1:5173`. The development server forwards `/api` to the API
+at `http://127.0.0.1:3000`. To use another local API port:
+
+```powershell
+$env:API_TARGET = 'http://127.0.0.1:3001'
+npm run dev
+```
+
+For an **existing database**, run this once from `src` before using student
+enrollment. It allows an unpublished grade to be `NULL`, preserving existing data:
+
+```powershell
+npm run prepare:student-enrollment
+```
+
+New databases get the nullable field from the model automatically. New student
+enrollments have `status: "pending"` and `finalGrade: null`. Professors publish
+grades through the existing enrollment update route. Student enrollment checks
+semester end date, duplicate enrollment, and capacity in a transaction.
+
+### Login and permissions
+
+| Method | Route | Purpose |
+| --- | --- | --- |
+| POST | `/auth/login` | `{ role: "student", studentNumber }` or `{ role: "professor", email, password }` |
+| GET | `/auth/me` | Current signed-in identity |
+| POST | `/auth/logout` | Revoke the current session; send JSON `{}` |
+| GET | `/portal/workspace` | Student's own classes/grades plus section catalog |
+| POST | `/portal/enroll` | Enroll the signed-in student using `{ sectionId }` |
+
+All existing management API routes now require a professor session. Sign in first
+in Postman and retain its cookie jar. Student data is scoped on the server, and
+student requests cannot set grades or another student's identity.
+
+Sessions use random, HttpOnly, SameSite=Strict cookies with an eight-hour expiry.
+They are stored in memory, so restarting the API signs everyone out. Login attempts
+are limited to 15 per IP per 15 minutes. Writes require JSON, and browser writes
+must match `UI_ORIGINS` (a comma-separated list; defaults to the two localhost
+origins on port 5173).
+
+Student-number-only login is the requested behavior: anyone who knows a valid
+student number can access that student's portal. It is identification, not proof
+of identity. Professor accounts still require their password.
+
+### Verification and deployment scope
+
+```powershell
+npm --prefix frontend test
+npm --prefix frontend run build
+npm --prefix src test
+```
+
+The optional live API test creates uniquely named temporary fixtures, tests both
+roles and enrollment isolation, and removes only its own fixtures. With the API
+running on port 3001:
+
+```powershell
+cd src
+$env:RUN_PORTAL_INTEGRATION = '1'
+$env:TEST_API_URL = 'http://127.0.0.1:3001'
+npm test
+```
+
+The built UI is in `frontend/dist`. Deployment needs a web server that serves those
+files and proxies `/api/*` to the backend with `/api` removed. Vite's development
+proxy is not included in the build. Use HTTPS, `NODE_ENV=production` for Secure
+cookies, the deployed origin in `UI_ORIGINS`, and a shared session store before
+running multiple backend instances. There is no public professor registration;
+existing professors sign in, and authenticated professors can add records.
+
+Attendance and announcements do not have backend modules and are not included in
+this implementation. Browser refresh returns to the sign-in screen; the preview
+role switch is not available in a live session.
+
+The current backend dependency audit reports two moderate findings through
+Sequelize's `uuid` dependency. No forced major-version downgrade was applied as
+part of the UI work. The frontend dependency audit passed with no findings.
+
 ## Features
 
 - Create, list, update, soft-delete, and hard-delete university records.
