@@ -9,3 +9,4 @@ node_modules/
 # Logs and generated coverage
 *.log
 coverage/
+dist/

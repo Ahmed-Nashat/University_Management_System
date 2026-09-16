@@ -15,7 +15,7 @@ EnrollmentModel.init(
       allowNull: false,
       validate: {
         isLowercase: true,
-        isIn: [["passed", "failed"]],
+        isIn: [["pending", "passed", "failed"]],
       },
       set(value) {
         this.setDataValue("status", value.trim());
@@ -23,12 +23,15 @@ EnrollmentModel.init(
     },
     finalGrade: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
       validate: {
         is: /^([a-zA-Z][+-]?|[+-][a-zA-Z])$/,
       },
       set(value) {
-        this.setDataValue("finalGrade", value.toUpperCase().trim());
+        this.setDataValue(
+          "finalGrade",
+          value == null ? null : value.toUpperCase().trim(),
+        );
       },
     },
     enrolledAt: {

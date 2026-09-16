@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "cross-env NODE_ENV=development nodemon main.js"
+    "start": "cross-env NODE_ENV=development nodemon main.js",
+    "prepare:student-enrollment": "node scripts/prepare-student-enrollment.js",
+    "test": "node --test tests/*.test.js"
   },
   "keywords": [],
   "author": "",
@@ -15,6 +17,7 @@
     "cross-env": "^10.1.0",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "mysql2": "^3.24.4",
     "sequelize": "^6.37.8"
   },
   "devDependencies": {
