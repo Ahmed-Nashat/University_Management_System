@@ -39,9 +39,11 @@ export const setupAssociations = () => {
 
   models.SemesterModel.hasMany(models.SectionModel, {
     foreignKey: "semesterId",
+    as: "sections",
   });
   models.SectionModel.belongsTo(models.SemesterModel, {
     foreignKey: "semesterId",
+    as: "semester",
   });
 
   models.ProfessorModel.hasMany(models.SectionModel, {
