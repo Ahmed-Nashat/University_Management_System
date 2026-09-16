@@ -54,6 +54,8 @@ export const getAllDepartments = async (data = {}) => {
   const offset = (page - 1) * limit;
 
   const { count, rows } = await DepartmentModel.findAndCountAll({
+    limit,
+    offset,
     include: [
       {
         model: CourseModel,
