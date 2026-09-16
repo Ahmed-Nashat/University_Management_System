@@ -22,6 +22,7 @@ export const setupAssociations = () => {
   });
   models.CourseModel.belongsTo(models.DepartmentModel, {
     foreignKey: "departmentId",
+    as: "department",
   });
 
   models.ProfessorModel.hasMany(models.StudentModel, {
