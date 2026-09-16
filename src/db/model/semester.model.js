@@ -12,11 +12,15 @@ SemesterModel.init(
       allowNull: false,
     },
     academicYear: {
-      type: DataTypes.DATE,
+      type: DataTypes.STRING,
       allowNull: false,
       validate: {
-        isDate: true,
+        is: /^\d{4}\/\d{4}$/,
       },
+    },
+    term: {
+      type: DataTypes.ENUM("fall", "spring", "summer"),
+      allowNull: false,
     },
     startDate: {
       type: DataTypes.DATE,
