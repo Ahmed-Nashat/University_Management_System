@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { X, LoaderCircle, AlertCircle } from "lucide-react";
+import { minutes } from "./academic.js";
 import { modules, formValues, makePayload, recordLabel } from "./modules.js";
 
 export function Modal({ title, subtitle, children, onClose, busy = false }) {
@@ -56,6 +57,8 @@ export function RecordForm({ moduleKey, record, data, onSave, onClose }) {
       new Date(values.endDate) <= new Date(values.startDate)
     )
       return setError("End date must be after the start date.");
+    if (moduleKey === "sections" && minutes(values.endTime) <= minutes(values.startTime))
+      return setError("End time must be later than start time.");
     setBusy(true);
     try {
       await onSave(payload);

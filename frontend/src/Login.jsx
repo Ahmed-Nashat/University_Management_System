@@ -68,7 +68,7 @@ export default function Login({ onLogin, onDemo }) {
           </div>
         </section>
         <section className="login-form-panel">
-          <div className="segmented glass">
+          <div className="segmented glass login-role-switch" data-role={role} aria-label="Sign-in role">
             <button
               type="button"
               className={role === "student" ? "selected" : ""}
@@ -95,14 +95,14 @@ export default function Login({ onLogin, onDemo }) {
             </button>
           </div>
           <h2>Welcome back.</h2>
-          <p>
+          <p key={`description-${role}`} className="login-role-copy">
             {role === "student"
               ? "Enter your student number to find your space."
               : "Sign in to your academic workspace."}
           </p>
-          <form onSubmit={submit} key={role}>
+          <form onSubmit={submit} className="login-transition-form">
             {role === "student" ? (
-              <div className="field">
+              <div className="field login-identity" key="student">
                 <label htmlFor="login-number">Student number</label>
                 <input
                   id="login-number"
@@ -114,8 +114,7 @@ export default function Login({ onLogin, onDemo }) {
                 />
               </div>
             ) : (
-              <>
-                <div className="field">
+                <div className="field login-identity" key="professor">
                   <label htmlFor="login-email">Email address</label>
                   <input
                     id="login-email"
@@ -127,6 +126,9 @@ export default function Login({ onLogin, onDemo }) {
                     disabled={busy}
                   />
                 </div>
+            )}
+            <div className={`login-password-reveal ${role === "professor" ? "is-visible" : ""}`} aria-hidden={role !== "professor"} inert={role !== "professor"}>
+              <div className="login-password-inner">
                 <div className="field">
                   <label htmlFor="login-password">Password</label>
                   <input
@@ -135,12 +137,12 @@ export default function Login({ onLogin, onDemo }) {
                     type="password"
                     autoComplete="current-password"
                     placeholder="Enter your password"
-                    required
-                    disabled={busy}
+                    required={role === "professor"}
+                    disabled={busy || role !== "professor"}
                   />
                 </div>
-              </>
-            )}
+              </div>
+            </div>
             {error && (
               <p className="login-error" role="alert">
                 {error}

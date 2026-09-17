@@ -2,19 +2,25 @@ import { useEffect, useId, useRef, useState } from "react";
 import { Building2, Check, ChevronDown } from "lucide-react";
 
 export default function DepartmentFilter({ departments, value, onChange }) {
+  return <SelectMenu
+    value={value}
+    onChange={onChange}
+    label="Departments"
+    icon={Building2}
+    options={[
+      { value: "", label: "All departments" },
+      ...departments.map(item => ({ value: String(item.id), label: item.name })),
+    ]}
+  />;
+}
+
+export function SelectMenu({ options, value, onChange, label, icon: Icon, className = "" }) {
   const [open, setOpen] = useState(false);
   const root = useRef(null);
   const trigger = useRef(null);
   const list = useRef(null);
   const search = useRef({ text: "", time: 0 });
   const id = useId();
-  const options = [
-    { value: "", label: "All departments" },
-    ...departments.map((item) => ({
-      value: String(item.id),
-      label: item.name,
-    })),
-  ];
   const selected = Math.max(
     0,
     options.findIndex((item) => item.value === value),
@@ -78,7 +84,7 @@ export default function DepartmentFilter({ departments, value, onChange }) {
 
   return (
     <div
-      className="department-filter"
+      className={`department-filter ${className}`}
       ref={root}
       onBlur={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
@@ -88,7 +94,7 @@ export default function DepartmentFilter({ departments, value, onChange }) {
         ref={trigger}
         type="button"
         className={`department-trigger ${open ? "is-open" : ""}`}
-        aria-label={`Filter department: ${options[selected].label}`}
+        aria-label={`${label}: ${options[selected].label}`}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={open ? id : undefined}
@@ -104,7 +110,7 @@ export default function DepartmentFilter({ departments, value, onChange }) {
           }
         }}
       >
-        <Building2 size={16} strokeWidth={1.6} aria-hidden="true" />
+        {Icon && <Icon size={16} strokeWidth={1.6} aria-hidden="true" />}
         <span>{options[selected].label}</span>
         <ChevronDown
           className="department-chevron"
@@ -118,7 +124,7 @@ export default function DepartmentFilter({ departments, value, onChange }) {
           ref={list}
           className="department-menu"
           role="listbox"
-          aria-label="Departments"
+          aria-label={label}
           onKeyDown={handleKey}
         >
           {options.map((option, index) => (

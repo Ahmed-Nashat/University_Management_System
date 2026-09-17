@@ -1,3 +1,4 @@
+import { weekdays } from "./academic.js";
 const field = (key, label, extra = {}) => ({
   key,
   label,
@@ -157,7 +158,10 @@ export const modules = {
         pattern: "[A-Za-z0-9]+",
         help: "Letters and numbers only, for example B204.",
       }),
-      field("schedule", "Schedule", { type: "datetime-local" }),
+      field("schedule", "First class date", { type: "datetime-local" }),
+      field("dayOfWeek", "Weekly class day", { options: weekdays }),
+      field("startTime", "Starts at", { type: "time" }),
+      field("endTime", "Ends at", { type: "time" }),
       field("capacity", "Capacity", { type: "number", min: 1 }),
     ],
     create: "createSection",
@@ -201,6 +205,7 @@ export const modules = {
       ["sectionId", "Section"],
       ["enrolledAt", "Enrolled on"],
       ["finalGrade", "Final grade"],
+      ["gradeStatus", "Publication"],
       ["status", "Result"],
     ],
     fields: [
@@ -212,10 +217,11 @@ export const modules = {
       }),
       field("enrolledAt", "Enrollment date", { type: "date", immutable: true }),
       field("status", "Result", {
-        options: ["passed", "failed"],
-        help: "The current API requires a final result for every enrollment.",
+        options: ["pending", "passed", "failed"],
+        help: "Use My teaching to manage and publish academic results.",
       }),
       field("finalGrade", "Final grade", {
+        required: false,
         pattern: "([a-zA-Z][+\\-]?|[+\\-][a-zA-Z])",
         placeholder: "A+",
       }),

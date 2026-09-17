@@ -1,3 +1,5 @@
+import Teaching from "./Teaching.jsx";
+import { timetableLabel, minutes, onDate, enrollmentIssue } from "./academic.js";
 import { useEffect, useRef, useState } from "react";
 import {
   GraduationCap,
@@ -29,7 +31,7 @@ import { createDemoData, changeDemo } from "./demo.js";
 import { listRecords, mutate, request } from "./api.js";
 import { Modal, RecordForm, DeleteDialog } from "./components.jsx";
 import Login from "./Login.jsx";
-import DepartmentFilter from "./DepartmentFilter.jsx";
+import DepartmentFilter, { SelectMenu } from "./DepartmentFilter.jsx";
 
 const moduleIcons = {
   students: Users,
@@ -51,11 +53,6 @@ const dateLabel = (value) =>
         year: "numeric",
       })
     : "—";
-const timeLabel = (value) =>
-  new Date(value).toLocaleTimeString("en-GB", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 function monday(value) {
   const d = new Date(value);
   d.setHours(0, 0, 0, 0);
@@ -91,7 +88,7 @@ export default function App() {
       : data.students.find((row) => row.id === user?.id);
   const studentEnrollments = data.enrollments.filter(
     (row) => row.studentId === student?.id,
-  );
+  ).map(row => mode === "demo" && row.gradeStatus !== "published" ? { ...row, finalGrade: null } : row);
   const mySections = data.sections.filter((section) =>
     studentEnrollments.some((row) => row.sectionId === section.id),
   );
@@ -206,6 +203,8 @@ export default function App() {
       }
       return;
     }
+    const issue = enrollmentIssue(section, mySections, data.semesters);
+    if (issue) { setModal({ ...modal, error: issue }); return; }
     const enrollment = {
       id: Math.max(0, ...demo.enrollments.map((row) => row.id)) + 1,
       studentId: student.id,
@@ -213,10 +212,24 @@ export default function App() {
       enrolledAt: new Date().toISOString(),
       status: "pending",
       finalGrade: null,
+      gradeStatus: "draft",
     };
     setDemo({ ...demo, enrollments: [...demo.enrollments, enrollment] });
     setModal(null);
     setToast("You’re enrolled. Your class is now in your schedule. Demo only.");
+  }
+  function demoAcademicChange(action, section, row, value) {
+    const candidates = demo.enrollments.filter(item => item.sectionId === section.id && (action === "publish" ? item.finalGrade && item.gradeStatus !== "published" : item.id === row.id));
+    if (!candidates.length) throw new Error("No draft grades to publish.");
+    const history = [...(demo.auditLogs || [])];
+    const enrollments = demo.enrollments.map(item => {
+      if (!candidates.some(candidate => candidate.id === item.id)) return item;
+      const after = { ...item, ...(action === "publish" ? { gradeStatus: "published" } : { [action === "grade" ? "finalGrade" : "status"]: value, gradeStatus: "draft" }) };
+      const snapshot = record => ({ finalGrade: record.finalGrade, status: record.status, gradeStatus: record.gradeStatus });
+      history.push({ id: crypto.randomUUID(), sectionId: section.id, studentNumber: demo.students.find(student => student.id === item.studentId)?.studentNumber, professorName: demo.professors[0]?.name, action: action === "publish" ? "grade_published" : "result_updated", before: snapshot(item), after: snapshot(after), createdAt: new Date().toISOString() });
+      return after;
+    });
+    setDemo({ ...demo, enrollments, auditLogs: history });
   }
   function cell(key, row) {
     const relations = {
@@ -238,7 +251,7 @@ export default function App() {
     if (["startDate", "endDate", "enrolledAt"].includes(key))
       return dateLabel(row[key]);
     if (key === "schedule")
-      return `${dateLabel(row[key])} · ${timeLabel(row[key])}`;
+      return timetableLabel(row);
     return row[key] ?? "—";
   }
   const visibleSections = data.sections.filter((section) => {
@@ -268,6 +281,11 @@ export default function App() {
     return d;
   });
   const shownDays = view === "today" ? [new Date()] : days;
+  const starts = mySections.map(row => minutes(row.startTime) / 60).filter(Number.isFinite);
+  const ends = mySections.map(row => minutes(row.endTime) / 60).filter(Number.isFinite);
+  const scheduleStart = Math.max(0, Math.floor(Math.min(8, ...starts)));
+  const scheduleEnd = Math.min(24, Math.ceil(Math.max(19, ...ends)));
+
   const semester =
     data.semesters.find(
       (item) =>
@@ -314,16 +332,17 @@ export default function App() {
         </div>
         <div className="account-controls">
           {mode === "demo" ? (
-            <label className="role-picker">
-              <span className="sr-only">Preview workspace</span>
-              <select
-                value={role}
-                onChange={(event) => switchRole(event.target.value)}
-              >
-                <option value="student">Student preview</option>
-                <option value="professor">Professor preview</option>
-              </select>
-            </label>
+            <SelectMenu
+              className="preview-picker"
+              label="Preview workspace"
+              icon={role === "student" ? BookOpen : GraduationCap}
+              value={role}
+              onChange={switchRole}
+              options={[
+                { value: "student", label: "Student preview" },
+                { value: "professor", label: "Professor preview" },
+              ]}
+            />
           ) : (
             <span className="quiet">{user?.name}</span>
           )}
@@ -468,9 +487,9 @@ export default function App() {
                       <div className={`schedule ${view}`}>
                         <div className="time-column">
                           <div className="day-heading" />
-                          {Array.from({ length: 11 }, (_, i) => (
+                          {Array.from({ length: scheduleEnd - scheduleStart }, (_, i) => (
                             <div className="hour-label" key={i}>
-                              {String(i + 8).padStart(2, "0")}:00
+                              {String(i + scheduleStart).padStart(2, "0")}:00
                             </div>
                           ))}
                         </div>
@@ -486,31 +505,29 @@ export default function App() {
                               </span>
                               <strong>{day.getDate()}</strong>
                             </div>
-                            <div className="day-track">
+                            <div className="day-track" style={{ height: `${(scheduleEnd - scheduleStart) * 58}px` }}>
                               {mySections
                                 .filter((section) =>
-                                  sameDay(section.schedule, day),
+                                  onDate(section, day, data.semesters),
                                 )
                                 .map((section) => {
                                   const course = find(
                                     "courses",
                                     section.courseId,
                                   );
-                                  const date = new Date(section.schedule);
+                                  const start = minutes(section.startTime) / 60;
                                   const position = Math.max(
                                     0,
                                     Math.min(
-                                      9.5,
-                                      date.getHours() -
-                                        8 +
-                                        date.getMinutes() / 60,
+                                      scheduleEnd - scheduleStart,
+                                      start - scheduleStart,
                                     ),
                                   );
                                   return (
                                     <button
                                       key={section.id}
                                       className={`class-block tone-${section.id % 3}`}
-                                      style={{ top: `${position * 58}px` }}
+                                      style={{ top: `${position * 58}px`, height: `${Math.max(50, (minutes(section.endTime) - minutes(section.startTime)) / 60 * 58)}px` }}
                                       onClick={() =>
                                         setModal({
                                           type: "section",
@@ -525,7 +542,7 @@ export default function App() {
                                         {course?.name || section.sectionCode}
                                       </strong>
                                       <span>
-                                        {timeLabel(section.schedule)} ·{" "}
+                                        {section.startTime?.slice(0, 5)}–{section.endTime?.slice(0, 5)} ·{" "}
                                         {section.room}
                                       </span>
                                       <ArrowUpRight size={15} />
@@ -562,8 +579,7 @@ export default function App() {
                                   section.sectionCode}
                               </span>
                               <small>
-                                {dateLabel(section.schedule)} ·{" "}
-                                {timeLabel(section.schedule)} · {section.room}
+                                {timetableLabel(section)} · {section.room}
                               </small>
                               <ArrowUpRight size={16} />
                             </button>
@@ -600,6 +616,7 @@ export default function App() {
                         const enrolled = studentEnrollments.some(
                           (row) => row.sectionId === section.id,
                         );
+                        const issue = !enrolled ? enrollmentIssue(section, mySections, data.semesters) : "";
                         const seats = Math.max(
                           0,
                           section.capacity -
@@ -631,19 +648,19 @@ export default function App() {
                               </span>
                               <span>
                                 <CalendarDays size={16} />
-                                {dateLabel(section.schedule)} ·{" "}
-                                {timeLabel(section.schedule)}
+                                {timetableLabel(section)}
                               </span>
                               <span>
                                 <MapPin size={16} />
                                 Room {section.room}
                               </span>
                             </div>
+                            {issue && <p className="conflict-note">{issue}</p>}
                             <div className="course-bottom">
                               <span>{seats} seats available</span>
                               <button
                                 className={`button ${enrolled ? "enrolled" : "secondary"}`}
-                                disabled={enrolled || seats === 0}
+                                disabled={enrolled || seats === 0 || Boolean(issue)}
                                 onClick={() =>
                                   setModal({ type: "enroll", record: section })
                                 }
@@ -757,6 +774,7 @@ export default function App() {
                     <BriefcaseBusiness size={16} />
                     Overview
                   </button>
+                  <button className={page === "teaching" ? "active" : ""} onClick={() => navigate("teaching")}><ClipboardList size={16}/> My teaching</button>
                   {Object.entries(modules).map(([key, module]) => {
                     const Icon = moduleIcons[key];
                     return (
@@ -774,10 +792,10 @@ export default function App() {
                 <div className="page-heading">
                   <div>
                     <p className="eyebrow">PROFESSOR WORKSPACE</p>
-                    <h1>{professorPage?.title || "A campus in motion."}</h1>
+                    <h1>{professorPage?.title || (page === "teaching" ? "Your classroom, connected." : "A campus in motion.")}</h1>
                     <p>
                       {professorPage?.description ||
-                        "Your academic community, all in one place."}
+                        (page === "teaching" ? "Manage results, publish grades, and follow every change." : "Your academic community, all in one place.")}
                     </p>
                   </div>
                   {professorPage && (
@@ -791,6 +809,7 @@ export default function App() {
                     </button>
                   )}
                 </div>
+                {page === "teaching" && <Teaching data={data} mode={mode} user={user} onDemoChange={demoAcademicChange}/>}
                 {page === "overview" && (
                   <>
                     <div className="metrics">
@@ -893,7 +912,7 @@ export default function App() {
                               <tr key={row.id}>
                                 {professorPage.columns.map(([key], i) => (
                                   <td key={key}>
-                                    {key === "status" ? (
+                                    {["status", "gradeStatus"].includes(key) ? (
                                       <span className={`badge ${row[key]}`}>
                                         {row[key]}
                                       </span>
@@ -1076,8 +1095,7 @@ export default function App() {
                   Schedule
                 </dt>
                 <dd>
-                  {dateLabel(modal.record.schedule)} ·{" "}
-                  {timeLabel(modal.record.schedule)}
+                  {timetableLabel(modal.record)}
                 </dd>
               </div>
               <div>

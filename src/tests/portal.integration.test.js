@@ -249,6 +249,15 @@ test(
       );
       assert.equal((await call("/professors/publishGrades", { method: "PATCH", cookie: faculty.cookie, body: { sectionId: section.id } })).status, 200);
       assert.equal((await call("/portal/workspace", { cookie: login.cookie })).data.data.enrollments.find(row => row.id === enrolled.data.data.id).finalGrade, "A");
+      const roster = await call(`/sections/getSectionRoaster?sectionId=${section.id}&page=1&limit=10`, { cookie: faculty.cookie });
+      assert.equal(roster.status, 200);
+      assert.equal(roster.data.data.rows[0].StudentModel.userName, "Test Student");
+      assert.equal(roster.data.data.rows[0].gradeStatus, "published");
+      const history = await call(`/professors/auditLogs?sectionId=${section.id}&page=1&limit=1`, { cookie: faculty.cookie });
+      assert.equal(history.status, 200);
+      assert.equal(history.data.data.meta.totalCount, 2);
+      assert.equal(history.data.data.rows[0].after.gradeStatus, "published");
+      assert.equal((await call(`/professors/auditLogs?sectionId=${section.id}`, { cookie: login.cookie })).status, 403);
       const removed = await call(
         `/enrollments/deleteEnrollment?enrollmentId=${enrolled.data.data.id}`,
         {
