@@ -247,3 +247,12 @@ Use `npm run prepare:audit-logs` from `src` to create the audit table explicitly
 existing section tables, then fill each section's day/start/end values.
 `RUN_GRADE_INTEGRATION=1` enables the database-backed audit test; it creates and
 removes its own section/enrollment fixtures and requires existing relationships.
+
+### Academic UI
+
+Sign in as a professor and open **My teaching** to select an assigned section,
+page through its roster, save grades/results, publish drafts, and read audit history.
+Student Classes repeat weekly within their semester dates. Enroll shows conflicts
+and incomplete timetables, and Grades displays results only after publication.
+Section forms now require a weekly day, start time and end time. The demo workspace
+supports the same teaching actions with temporary sample history.

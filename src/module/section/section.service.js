@@ -213,7 +213,7 @@ export const getSectionsRoaster = async ({
     include: [
       {
         model: StudentModel,
-        attributes: ["id", "studentNumber", "firstName", "lastName", "email"],
+        attributes: ["id", "studentNumber", "firstName", "lastName", "userName", "email"],
       },
     ],
   });

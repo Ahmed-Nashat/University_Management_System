@@ -92,6 +92,9 @@ export function createDemoData() {
     professorId: `prof-${i % 4}`,
     room: `B20${i + 1}`,
     capacity: 30 + i * 5,
+    dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"][i % 5],
+    startTime: `${String(9 + i).padStart(2, "0")}:00:00`,
+    endTime: `${String(11 + i).padStart(2, "0")}:00:00`,
     schedule: `2026-09-${14 + (i % 5)}T${String(9 + i).padStart(2, "0")}:00:00`,
   }));
   const enrollments = students
@@ -102,6 +105,7 @@ export function createDemoData() {
       sectionId: (i % 6) + 1,
       enrolledAt: `2026-09-${String(1 + i).padStart(2, "0")}`,
       status: i === 3 ? "failed" : "passed",
+      gradeStatus: "published",
       finalGrade: i === 3 ? "F" : ["A", "B+", "A-"][i % 3],
     }));
   enrollments.push(
@@ -112,6 +116,7 @@ export function createDemoData() {
       enrolledAt: "2026-09-02",
       status: "pending",
       finalGrade: null,
+      gradeStatus: "draft",
     },
     {
       id: 10,
@@ -120,6 +125,7 @@ export function createDemoData() {
       enrolledAt: "2026-09-02",
       status: "pending",
       finalGrade: null,
+      gradeStatus: "draft",
     },
   );
   return {
