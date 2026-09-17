@@ -1,7 +1,8 @@
 # University Management System
 
-A REST API for managing university departments, students, professors, courses,
-semesters, course sections, and student enrollments.
+A full-stack university management application with a React/Vite interface and an
+Express/Sequelize API for departments, students, professors, courses, semesters,
+sections, enrollments, grade publishing, and grade audit history.
 
 ## Web Interface
 
@@ -40,9 +41,10 @@ npm run prepare:student-enrollment
 ```
 
 New databases get the nullable field from the model automatically. New student
-enrollments have `status: "pending"` and `finalGrade: null`. Professors publish
-grades through the existing enrollment update route. Student enrollment checks
-semester end date, duplicate enrollment, and capacity in a transaction.
+enrollments have `status: "pending"` and `finalGrade: null`. Professors save
+draft results and publish them separately through `/professors/publishGrades`.
+Student enrollment checks semester end date, duplicate enrollment, capacity, and
+same-semester timetable conflicts in a transaction.
 
 ### Login and permissions
 
@@ -219,6 +221,10 @@ the configured database and synchronizes the models.
 
 ## API Documentation
 
+See [technical documentation](DOCUMENTATION.md) for architecture, database models,
+authentication, workflows, and testing, and [frontend documentation](frontend/README.md)
+for UI setup and source files.
+
 Use the complete [Postman API documentation](https://documenter.getpostman.com/view/57007367/2sBYB1MTQz) for request bodies, parameters, and saved success/error examples.
 
 ## Notes
@@ -256,3 +262,37 @@ Student Classes repeat weekly within their semester dates. Enroll shows conflict
 and incomplete timetables, and Grades displays results only after publication.
 Section forms now require a weekly day, start time and end time. The demo workspace
 supports the same teaching actions with temporary sample history.
+
+### Latest interface updates
+
+- **My teaching:** assigned-section selector, paginated rosters, grade and result
+  editing, publication confirmation, and paginated audit history.
+- **Classes:** recurring weekly schedules within semester dates, using
+  `dayOfWeek`, `startTime`, and `endTime`.
+- **Enroll:** notices for timetable conflicts, missing times, and closed semesters.
+- **Grades:** unpublished grades remain hidden while enrolled classes stay visible.
+- Custom department and preview-role menus support keyboard navigation.
+- Login role switching uses a sliding highlight and animated fields, with
+  reduced-motion support.
+
+### Troubleshooting local login
+
+Run both `npm start` from `src` and `npm run dev` from `frontend`.
+Open `http://127.0.0.1:5173/`. An unauthenticated request to
+`http://127.0.0.1:5173/api/auth/me` should return JSON with HTTP 401.
+If it returns HTML, restart Vite from `frontend` using
+`npm run dev -- --config vite.config.js` to load the API proxy.
+If it cannot connect, check that the API and MySQL are running. API restarts
+invalidate existing sessions; sign in again. Use the same hostname for all
+Postman requests so its session cookie is retained.
+
+For older databases that lack `gradeStatus`, add it once (check the schema first):
+
+```sql
+ALTER TABLE enrollments
+ADD COLUMN gradeStatus VARCHAR(255) NOT NULL DEFAULT 'draft';
+```
+
+Do not enable automatic `sync({ alter: true })`: schema upgrades are explicit.
+The timetable upgrade leaves existing rows nullable to preserve data; fill in
+their real timetable before allowing student enrollment.

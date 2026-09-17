@@ -31,7 +31,7 @@ import { createDemoData, changeDemo } from "./demo.js";
 import { listRecords, mutate, request } from "./api.js";
 import { Modal, RecordForm, DeleteDialog } from "./components.jsx";
 import Login from "./Login.jsx";
-import DepartmentFilter from "./DepartmentFilter.jsx";
+import DepartmentFilter, { SelectMenu } from "./DepartmentFilter.jsx";
 
 const moduleIcons = {
   students: Users,
@@ -332,16 +332,17 @@ export default function App() {
         </div>
         <div className="account-controls">
           {mode === "demo" ? (
-            <label className="role-picker">
-              <span className="sr-only">Preview workspace</span>
-              <select
-                value={role}
-                onChange={(event) => switchRole(event.target.value)}
-              >
-                <option value="student">Student preview</option>
-                <option value="professor">Professor preview</option>
-              </select>
-            </label>
+            <SelectMenu
+              className="preview-picker"
+              label="Preview workspace"
+              icon={role === "student" ? BookOpen : GraduationCap}
+              value={role}
+              onChange={switchRole}
+              options={[
+                { value: "student", label: "Student preview" },
+                { value: "professor", label: "Professor preview" },
+              ]}
+            />
           ) : (
             <span className="quiet">{user?.name}</span>
           )}
