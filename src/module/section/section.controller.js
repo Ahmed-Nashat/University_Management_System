@@ -66,3 +66,22 @@ sectionRouter.patch("/updateSection", async (req, res) => {
     status: 200,
   });
 });
+
+sectionRouter.get("/getSectionRoaster", async (req, res, next) => {
+  const { page, limit, sectionId } = req.query
+  try {
+    const section = await sectionService.getSectionsRoaster({
+      professorId: req.user.id,
+      sectionId,
+      page,
+      limit,
+    });
+    return response({
+      res,
+      msg: "Section fetched",
+      data: section,
+    });
+  } catch (e) {
+    next(e);
+  }
+});

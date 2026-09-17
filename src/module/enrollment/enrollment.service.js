@@ -1,3 +1,5 @@
+import { updateGrades } from "../professor/grade.service.js";
+import { checkExisting } from "../../common/index.js";
 import {
   CourseModel,
   EnrollmentModel,
@@ -12,7 +14,15 @@ const enrollmentIncludes = [
   },
   {
     model: SectionModel,
-    attributes: ["id", "sectionCode", "room", "schedule"],
+    attributes: [
+      "id",
+      "sectionCode",
+      "room",
+      "schedule",
+      "dayOfWeek",
+      "startTime",
+      "endTime",
+    ],
     include: [
       {
         model: CourseModel,
@@ -27,24 +37,30 @@ export const createEnrollment = async ({
   sectionId,
   enrollmentData,
 }) => {
-  const student = await StudentModel.findByPk(studentId);
-  if (!student) throw new Error("Student not found", { cause: 404 });
+  await checkExisting({
+    model: StudentModel,
+    searchParameter: { id: studentId },
+    msg: "Student not found",
+  });
 
   if (!sectionId) {
     throw new Error("Section ID is required", { cause: 400 });
   }
 
-  const section = await SectionModel.findByPk(sectionId);
-  if (!section) throw new Error("Section not found", { cause: 404 });
-
-  const enrollment = await EnrollmentModel.findOne({
-    where: { studentId, sectionId },
+  await checkExisting({
+    model: SectionModel,
+    searchParameter: { id: sectionId },
+    msg: "Section not found",
   });
-  if (enrollment) {
-    throw new Error("This student is already enrolled in this section", {
-      cause: 409,
-    });
-  }
+
+  await checkExisting({
+    model: EnrollmentModel,
+    searchParameter: { studentId, sectionId },
+    msg: "This student is already enrolled in this section",
+    statusCode: 409,
+    isTrue: true,
+  });
+
   delete enrollmentData?.id;
 
   return EnrollmentModel.create({
@@ -59,10 +75,12 @@ export const getEnrollment = async (enrollmentId) => {
     throw new Error("Enrollment ID is required", { cause: 400 });
   }
 
-  const enrollment = await EnrollmentModel.findByPk(enrollmentId, {
-    include: enrollmentIncludes,
+  const enrollment = await checkExisting({
+    model: EnrollmentModel,
+    searchParameter: { id: enrollmentId },
+    options: { include: enrollmentIncludes },
+    msg: "Enrollment not found",
   });
-  if (!enrollment) throw new Error("Enrollment not found", { cause: 404 });
 
   return enrollment;
 };
@@ -91,30 +109,10 @@ export const getAllEnrollments = async (data = {}) => {
   };
 };
 
-export const updateEnrollment = async ({ enrollmentId, enrollmentData }) => {
-  if (!enrollmentId) {
-    throw new Error("Enrollment ID is required", { cause: 400 });
-  }
-
-  const enrollment = await EnrollmentModel.findByPk(enrollmentId);
-  if (!enrollment) throw new Error("Enrollment not found", { cause: 404 });
-
-  const updates = {};
-  if (Object.hasOwn(enrollmentData, "status")) {
-    updates.status = enrollmentData.status;
-  }
-  if (Object.hasOwn(enrollmentData, "finalGrade")) {
-    updates.finalGrade = enrollmentData.finalGrade;
-  }
-
-  if (!Object.keys(updates).length) {
-    throw new Error("Only status and finalGrade can be updated", { cause: 400 });
-  }
-
-  await enrollment.update(updates);
-  await enrollment.reload({ include: enrollmentIncludes });
-
-  return enrollment;
+export const updateEnrollment = async ({ enrollmentId, enrollmentData, professorId }) => {
+  const enrollment = await checkExisting({ model: EnrollmentModel, searchParameter: { id: enrollmentId }, msg: "Enrollment not found" });
+  const student = await checkExisting({ model: StudentModel, searchParameter: { id: enrollment.studentId }, msg: "Student not found" });
+  return updateGrades({ professorId, sectionId: enrollment.sectionId, studentNumber: student.studentNumber, updates: enrollmentData });
 };
 
 export const deleteEnrollment = async ({ enrollmentId, hard }) => {
@@ -122,10 +120,11 @@ export const deleteEnrollment = async ({ enrollmentId, hard }) => {
     throw new Error("Enrollment ID is required", { cause: 400 });
   }
 
-  const enrollment = await EnrollmentModel.findByPk(enrollmentId, {
-    paranoid: !hard,
+  const enrollment = await checkExisting({
+    model: EnrollmentModel,
+    searchParameter: { id: enrollmentId },
+    msg: "Enrollment not found",
   });
-  if (!enrollment) throw new Error("Enrollment not found", { cause: 404 });
 
   await enrollment.destroy({ force: hard });
   return enrollment;

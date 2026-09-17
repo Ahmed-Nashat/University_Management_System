@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { sequelize } from "../../db/connection.js";
+import { checkExisting } from "../../common/index.js";
 import {
   CourseModel,
   DepartmentModel,
@@ -11,6 +12,23 @@ import {
 } from "../../db/model/index.js";
 
 export const studentPortalRouter = Router();
+
+const timeToMinutes = (time) => {
+  const [hours, minutes] = String(time).split(":").map(Number);
+  return hours * 60 + minutes;
+};
+
+const hasTimeConflict = (firstSection, secondSection) => {
+  if (firstSection.dayOfWeek !== secondSection.dayOfWeek) return false;
+
+  const firstStart = timeToMinutes(firstSection.startTime);
+  const firstEnd = timeToMinutes(firstSection.endTime);
+  const secondStart = timeToMinutes(secondSection.startTime);
+  const secondEnd = timeToMinutes(secondSection.endTime);
+
+  return firstStart < secondEnd && firstEnd > secondStart;
+};
+
 studentPortalRouter.use((req, res, next) => {
   if (req.user.role !== "student")
     return res.status(403).json({ msg: "Student access is required." });
@@ -44,6 +62,9 @@ studentPortalRouter.get("/workspace", async (req, res) => {
         "professorId",
         "room",
         "schedule",
+        "dayOfWeek",
+        "startTime",
+        "endTime",
         "capacity",
       ],
     }),
@@ -58,6 +79,7 @@ studentPortalRouter.get("/workspace", async (req, res) => {
         "sectionId",
         "status",
         "finalGrade",
+        "gradeStatus",
         "enrolledAt",
       ],
     }),
@@ -80,7 +102,14 @@ studentPortalRouter.get("/workspace", async (req, res) => {
       professors,
       departments,
       semesters,
-      enrollments,
+      enrollments: enrollments.map((enrollment) => {
+        const enrollmentData = enrollment.toJSON();
+        if (enrollmentData.gradeStatus !== "published") {
+          enrollmentData.finalGrade = null;
+        }
+        delete enrollmentData.gradeStatus;
+        return enrollmentData;
+      }),
       sections: sections.map((section) => ({
         ...section.toJSON(),
         occupied: occupied.get(section.id) || 0,
@@ -94,26 +123,67 @@ studentPortalRouter.post("/enroll", async (req, res) => {
   if (!Number.isSafeInteger(sectionId) || sectionId < 1)
     return res.status(400).json({ msg: "Choose a valid section." });
   const enrollment = await sequelize.transaction(async (transaction) => {
-    const section = await SectionModel.findByPk(sectionId, {
-      transaction,
-      lock: transaction.LOCK.UPDATE,
+    await checkExisting({ model: StudentModel, searchParameter: { id: req.user.id }, msg: "Student not found", options: { transaction, lock: transaction.LOCK.UPDATE } });
+    const section = await checkExisting({
+      model: SectionModel,
+      msg: "Section not found.",
+      searchParameter: { id: sectionId },
+      options: { transaction, lock: transaction.LOCK.UPDATE },
     });
-    if (!section) throw new Error("Section not found.", { cause: 404 });
-    const semester = await SemesterModel.findByPk(section.semesterId, {
-      transaction,
+
+    const semester = await checkExisting({
+      model: SemesterModel,
+      msg: "Semester not found.",
+      searchParameter: { id: section.semesterId },
+      options: { transaction },
     });
-    if (!semester || new Date(semester.endDate) < new Date())
+    if (new Date(semester.endDate) < new Date())
       throw new Error("Enrollment for this semester has closed.", {
         cause: 409,
       });
-    const existing = await EnrollmentModel.findOne({
-      where: { studentId: req.user.id, sectionId },
+
+    await checkExisting({
+      model: EnrollmentModel,
+      msg: "You are already enrolled in this section.",
+      statusCode: 409,
+      searchParameter: { studentId: req.user.id, sectionId },
+      options: { transaction },
+      isTrue: true,
+    });
+
+    if (!section.dayOfWeek || !section.startTime || !section.endTime) {
+      throw new Error("This section does not have a complete timetable.", {
+        cause: 400,
+      });
+    }
+
+    if (timeToMinutes(section.startTime) >= timeToMinutes(section.endTime)) {
+      throw new Error("This section has an invalid timetable.", { cause: 400 });
+    }
+
+    const enrolledSections = await SectionModel.findAll({
+      where: {
+        semesterId: section.semesterId,
+        dayOfWeek: section.dayOfWeek,
+      },
+      include: [
+        {
+          model: EnrollmentModel,
+          required: true,
+          where: { studentId: req.user.id },
+          attributes: [],
+        },
+      ],
       transaction,
     });
-    if (existing)
-      throw new Error("You are already enrolled in this section.", {
-        cause: 409,
-      });
+
+    if (enrolledSections.some((enrolledSection) => hasTimeConflict(section, enrolledSection))) {
+      throw new Error(
+        "This class conflicts with another class in your timetable.",
+        { cause: 409 },
+      );
+    }
+
     const count = await EnrollmentModel.count({
       where: { sectionId },
       transaction,

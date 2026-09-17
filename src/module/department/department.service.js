@@ -5,6 +5,7 @@ import {
   ProfessorModel,
   SectionModel,
 } from "../../db/model/index.js";
+import { checkExisting } from "../../common/index.js";
 
 export const createDepartment = async (departmentData) => {
   const { name, phoneNumber } = departmentData;
@@ -24,11 +25,12 @@ export const updateDepartment = async ({
   departmentData,
   id: departmentId,
 }) => {
-  const department = await DepartmentModel.findByPk(departmentId);
+  const department = await checkExisting({
+    model: DepartmentModel,
+    searchParameter: { id: departmentId },
+    msg: "Department not found",
+  });
 
-  if (!department) {
-    throw new Error("Department not found", { cause: 404 });
-  }
   if (Object.hasOwn(departmentData, "id")) {
     delete departmentData.id;
     console.log(departmentData);
@@ -38,8 +40,11 @@ export const updateDepartment = async ({
 };
 
 export const deleteDepartment = async (departmentId, hard) => {
-  const department = await DepartmentModel.findByPk(departmentId);
-  if (!department) throw new Error("Department not found", { cause: 404 });
+  const department = await checkExisting({
+    model: DepartmentModel,
+    searchParameter: { id: departmentId },
+    msg: "Department not found",
+  });
 
   return await department.destroy({
     force: hard ? true : false,

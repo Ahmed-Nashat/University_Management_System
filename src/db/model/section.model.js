@@ -25,6 +25,21 @@ SectionModel.init(
       type: DataTypes.DATE,
       allowNull: false,
     },
+    dayOfWeek: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      field: "day_of_week",
+    },
+    startTime: {
+      type: DataTypes.TIME,
+      allowNull: false,
+      field: "start_time",
+    },
+    endTime: {
+      type: DataTypes.TIME,
+      allowNull: false,
+      field: "end_time",
+    },
     capacity: {
       type: DataTypes.INTEGER,
       allowNull: false,

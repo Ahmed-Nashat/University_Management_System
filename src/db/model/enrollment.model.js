@@ -51,6 +51,18 @@ EnrollmentModel.init(
       allowNull: false,
       field: "section_id",
     },
+    gradeStatus: {
+      type: DataTypes.STRING,
+      defaultValue: "draft",
+      allowNull: false,
+      validate: {
+        isIn: [["draft", "published"]],
+        isLowercase: true,
+      },
+      set(value) {
+        this.setDataValue("gradeStatus", value.trim());
+      },
+    },
   },
   {
     sequelize,
