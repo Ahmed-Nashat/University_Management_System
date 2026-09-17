@@ -1,25 +1,24 @@
 import { Op } from "sequelize";
 import { CourseModel, DepartmentModel } from "../../db/model/index.js";
+import { checkExisting } from "../../common/index.js";
 
 export const createCourse = async (courseData) => {
   const { name, code, departmentId } = courseData;
 
-  const department = await DepartmentModel.findByPk(departmentId);
-
-  if (!department) {
-    throw new Error("Department not found", { cause: 404 });
-  }
-
-  const exists = await CourseModel.findOne({
-    where: {
-      [Op.or]: [{ name }, { code }],
-    },
-    paranoid: false,
+  await checkExisting({
+    model: DepartmentModel,
+    searchParameter: { id: departmentId },
+    msg: "Department not found",
   });
 
-  if (exists) {
-    throw new Error("Course code or name already exists", { cause: 409 });
-  }
+  await checkExisting({
+    model: CourseModel,
+    searchParameter: { [Op.or]: [{ name }, { code }] },
+    options: { paranoid: false },
+    msg: "Course code or name already exists",
+    statusCode: 409,
+    isTrue: true,
+  });
 
   return await CourseModel.create(courseData);
 };
@@ -27,31 +26,29 @@ export const createCourse = async (courseData) => {
 export const updateCourse = async ({ code: courseCode, courseData }) => {
   const { id, code, name, ...allowedUpdates } = courseData;
 
-  const course = await CourseModel.findOne({
-    where: {
-      code: courseCode,
-    },
+  const course = await checkExisting({
+    model: CourseModel,
+    searchParameter: { code: courseCode },
+    msg: "Course not found",
   });
-  if (!course) {
-    throw new Error("Course not found", { cause: 404 });
-  }
 
   if (Object.hasOwn(courseData, "departmentId")) {
-    const department = await DepartmentModel.findByPk(courseData.departmentId);
-
-    if (!department) {
-      throw new Error("Department not found", { cause: 404 });
-    }
+    await checkExisting({
+      model: DepartmentModel,
+      searchParameter: { id: departmentId },
+      msg: "Department not found",
+    });
   }
   return await course.update(allowedUpdates);
 };
 
 export const deleteCourse = async (courseCode, hard) => {
-  const course = await CourseModel.findOne({
-    where: { code: courseCode },
-    paranoid: !hard,
+  const course = await checkExisting({
+    model: CourseModel,
+    searchParameter: { code: courseCode },
+    options: { paranoid: !hard },
+    msg: "Course not found",
   });
-  if (!course) throw new Error("Course not found", { cause: 404 });
 
   return await course.destroy({
     force: hard ? true : false,

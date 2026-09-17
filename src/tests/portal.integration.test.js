@@ -82,6 +82,7 @@ test(
         sectionCode: prefix,
         room: "QA1",
         schedule: "2098-09-01T09:00:00Z",
+        dayOfWeek: "Monday", startTime: "09:00:00", endTime: "11:00:00",
         capacity: 1,
         courseId: course.id,
         professorId: professor.id,
@@ -244,8 +245,10 @@ test(
           await call("/portal/workspace", { cookie: login.cookie })
         ).data.data.enrollments.find((row) => row.id === enrolled.data.data.id)
           .finalGrade,
-        "A",
+        null,
       );
+      assert.equal((await call("/professors/publishGrades", { method: "PATCH", cookie: faculty.cookie, body: { sectionId: section.id } })).status, 200);
+      assert.equal((await call("/portal/workspace", { cookie: login.cookie })).data.data.enrollments.find(row => row.id === enrolled.data.data.id).finalGrade, "A");
       const removed = await call(
         `/enrollments/deleteEnrollment?enrollmentId=${enrolled.data.data.id}`,
         {
@@ -284,8 +287,10 @@ test(
         body: {},
       });
     } finally {
-      for (const row of fixtures.reverse())
+      for (const row of fixtures.reverse()) {
+        if (row instanceof models.SectionModel) await models.AuditLogModel.destroy({ where: { sectionId: row.id } });
         if (row) await row.destroy({ force: true });
+      }
       await sequelize.close();
     }
   },

@@ -1,3 +1,4 @@
+import { checkExisting } from "../../common/index.js";
 import { SectionModel, SemesterModel } from "../../db/model/index.js";
 import { Op } from "sequelize";
 
@@ -21,13 +22,14 @@ const ensureSemesterIsUnique = async ({ academicYear, term, semesterId }) => {
     where.id = { [Op.ne]: semesterId };
   }
 
-  const exists = await SemesterModel.findOne({ where, paranoid: false });
-
-  if (exists) {
-    throw new Error("Semester already exists for this academic year", {
-      cause: 409,
-    });
-  }
+  await checkExisting({
+    model: SemesterModel,
+    searchParameter: { where },
+    options: { paranoid: false },
+    msg: "Semester already exists for this academic year",
+    statusCode: 409,
+    isTrue: true,
+  });
 };
 
 export const createSemester = async (semesterData) => {
@@ -45,8 +47,11 @@ export const updateSemester = async ({ semesterId, semesterData }) => {
     throw new Error("Semester ID is required", { cause: 400 });
   }
 
-  const semester = await SemesterModel.findByPk(semesterId);
-  if (!semester) throw new Error("Semester not found", { cause: 404 });
+  const semester = await checkExisting({
+    model: SemesterModel,
+    searchParameter: { id: semesterId },
+    msg: "Semester not found",
+  });
 
   const updatedSemesterData = {
     ...semester.get(),
@@ -74,10 +79,14 @@ export const deleteSemester = async ({ semesterId, hard }) => {
     throw new Error("Semester ID is required", { cause: 400 });
   }
 
-  const semester = await SemesterModel.findByPk(semesterId, {
-    paranoid: !hard,
+  const semester = await checkExisting({
+    model: SemesterModel,
+    searchParameter: { id: semesterId },
+    options: { paranoid: !hard },
+    msg: "Semester already exists for this academic year",
+    statusCode: 409,
+    isTrue: true,
   });
-  if (!semester) throw new Error("Semester not found", { cause: 404 });
   return semester.destroy({ force: hard });
 };
 

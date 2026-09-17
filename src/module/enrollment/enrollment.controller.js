@@ -61,6 +61,7 @@ enrollmentRouter.patch("/updateEnrollment", async (req, res, next) => {
     const enrollment = await enrollmentService.updateEnrollment({
       enrollmentId: req.query.enrollmentId,
       enrollmentData: req.body,
+      professorId: req.user.id,
     });
 
     return response({

@@ -1,7 +1,17 @@
+import { updateGrades, publishSectionGrades } from "./grade.service.js";
 import { Op } from "sequelize";
-import { hashing, comparing } from "../../common/index.js";
-import { ProfessorModel } from "../../db/model/professor.model.js";
-import { SectionModel } from "../../db/model/section.model.js";
+import {
+  hashing,
+  comparing,
+  checkExisting,
+  isTheOwner,
+} from "../../common/index.js";
+import {
+  ProfessorModel,
+  SectionModel,
+  StudentModel,
+  EnrollmentModel,
+} from "../../db/model/index.js";
 
 export const addProfessor = async (pfoessorData) => {
   const { password } = pfoessorData;
@@ -59,10 +69,11 @@ export const updateProfessor = async (professorEmail, professorData) => {
     throw new Error("Current password is required", { cause: 400 });
   }
 
-  const professor = await ProfessorModel.findOne({
-    where: { email: professorEmail },
+  const professor = await checkExisting({
+    model: ProfessorModel,
+    msg: "Professor not found",
+    searchParameter: { email: professorEmail },
   });
-  if (!professor) throw new Error("Professor not found", { cause: 404 });
 
   const isPasswordCorrect = await comparing({
     plainText: password,
@@ -86,19 +97,20 @@ export const updateProfessor = async (professorEmail, professorData) => {
 };
 
 export const assignSection = async (sectionCode, professorId) => {
-  const sectionExists = await SectionModel.findOne({
-    where: {
-      sectionCode,
-    },
+  const section = await checkExisting({
+    model: SectionModel,
+    msg: "Section not found",
+    searchParameter: { sectionCode },
   });
-  if (!sectionExists) throw new Error("Section not found", { cause: 404 });
 
-  const professorExists = await ProfessorModel.findByPk(professorId);
-  if (!professorExists)
-    throw new Error("Professor not found", { cause: 404 });
+  await checkExisting({
+    model: ProfessorModel,
+    msg: "Professor not found",
+    searchParameter: { id: professorId },
+  });
 
-  await sectionExists.update({ professorId });
-  await sectionExists.reload({
+  await section.update({ professorId });
+  await section.reload({
     include: [
       {
         model: ProfessorModel,
@@ -112,7 +124,7 @@ export const assignSection = async (sectionCode, professorId) => {
     professorId: ignoredProfessorId,
     professor,
     ...sectionData
-  } = sectionExists.toJSON();
+  } = section.toJSON();
 
   return {
     ...sectionData,
@@ -125,8 +137,11 @@ export const updatePassword = async (email, oldPassword, newPassword) => {
     throw new Error("Old and new passwords are required", { cause: 400 });
   }
 
-  const professor = await ProfessorModel.findOne({ where: { email } });
-  if (!professor) throw new Error("Professor not found", { cause: 404 });
+  const professor = await checkExisting({
+    model: ProfessorModel,
+    msg: "Professor not found",
+    searchParameter: { email },
+  });
 
   const isCorrectPassword = await comparing({
     plainText: oldPassword,
@@ -143,12 +158,21 @@ export const updatePassword = async (email, oldPassword, newPassword) => {
 };
 
 export const deleteProfessor = async (search) => {
-  const professor = await ProfessorModel.findOne({
-    where: {
+  const professor = await checkExisting({
+    model: ProfessorModel,
+    msg: "Professor not found",
+    searchParameter: {
       [Op.or]: [{ email: search }, { phoneNumber: search }],
     },
   });
-  if (!professor) throw new Error("Professor not found", { cause: 404 });
 
   return await professor.destroy();
 };
+
+export const updateFinalGrade = ({ professorId, sectionId, studentNumber, finalGrade }) =>
+  updateGrades({ professorId, sectionId, studentNumber, updates: { finalGrade } });
+
+export const udpateStatus = ({ professorId, sectionId, studentNumber, status }) =>
+  updateGrades({ professorId, sectionId, studentNumber, updates: { status } });
+
+export const publishGrades = publishSectionGrades;

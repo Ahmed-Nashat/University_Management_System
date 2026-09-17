@@ -1,3 +1,4 @@
+import { checkExisting } from "../../common/index.js";
 import { ProfessorModel } from "../../db/model/professor.model.js";
 import { StudentModel } from "../../db/model/student.model.js";
 
@@ -22,26 +23,21 @@ export const addStudent = async (studentData) => {
 };
 
 export const deleteStudent = async (studentNumber) => {
-  const exists = await StudentModel.findOne({
-    where: {
-      student_number: studentNumber,
-    },
+  const student = await checkExisting({
+    model: StudentModel,
+    msg: "Student not found",
+    searchParameter: { studentNumber },
   });
 
-  if (!exists) throw new Error("Student not found", { cause: 404 });
-
-  return await exists.destroy();
+  return await student.destroy();
 };
 
 export const updateStudent = async (studentNumber, studentData) => {
-  const student = await StudentModel.findOne({
-    where: {
-      student_number: studentNumber,
-    },
+  const student = await checkExisting({
+    model: StudentModel,
+    msg: "Student not found",
+    searchParameter: { studentNumber },
   });
-  if (!student) {
-    throw new Error("Student not found", { cause: 404 });
-  }
 
   delete studentData.id;
   delete studentData.studentNumber;
@@ -71,23 +67,18 @@ export const assignAcademicAdvisor = async (
   studentNumber,
   newAcademicAdvisorId,
 ) => {
-  const student = await StudentModel.findOne({
-    where: {
-      student_number: studentNumber,
-    },
+  const student = await checkExisting({
+    model: StudentModel,
+    msg: "Student not found",
+    searchParameter: { studentNumber },
   });
-  if (!student) {
-    throw new Error("Student not found", { cause: 404 });
-  }
 
-  const professor = await ProfessorModel.findOne({
-    where: {
-      id: newAcademicAdvisorId,
-    },
+  await checkExisting({
+    model: ProfessorModel,
+    msg: "Professor not found",
+    searchParameter: { id: newAcademicAdvisorId },
   });
-  if (!professor) {
-    throw new Error("Professor not found", { cause: 404 });
-  }
+
 
   const updatedStudent = await student.update({
     academic_advisor_id: newAcademicAdvisorId,
@@ -129,12 +120,12 @@ export const getAllStudents = async (data = {}) => {
       },
     ],
   });
-    return {
-      rows,
-      meta: {
-        totalCount: count,
-        totalPage: Math.ceil(count / limit),
-        currentPage: page,
-      },
-    };
+  return {
+    rows,
+    meta: {
+      totalCount: count,
+      totalPage: Math.ceil(count / limit),
+      currentPage: page,
+    },
+  };
 };
